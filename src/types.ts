@@ -208,3 +208,24 @@ export interface NotifyConfig {
   /** Seconds; omit / null to stay until closed. */
   Duration?: number | null;
 }
+
+export interface FontSource {
+  /** URL of a .woff2/.woff/.ttf/.otf file. Subject to the page's CSP `font-src`. */
+  Url?: string;
+  /** Raw font bytes (e.g. fetched with GM_xmlhttpRequest). Not subject to CSP, so it works on strict sites. */
+  Data?: ArrayBuffer | ArrayBufferView;
+  /** Locally installed font names tried first, e.g. "SF Pro Text" (no download on machines that have it). */
+  Local?: string | string[];
+  /** CSS weight or range: 400, "600", "100 900" for variable fonts. Default "400". */
+  Weight?: number | string;
+  Style?: "normal" | "italic";
+}
+
+export interface FontConfig {
+  /** Family name used inside the UI, e.g. "SF Pro". */
+  Family: string;
+  /** Files to load. Omit to use a font that is already available (installed or loaded by the page). */
+  Sources?: FontSource[];
+  /** Fallback stack after the family. Default: system-ui, -apple-system, "Segoe UI", sans-serif */
+  Fallback?: string;
+}

@@ -1,5 +1,5 @@
 // Single-file build for userscripts (Tampermonkey / Violentmonkey / Greasemonkey):
-//   // @require https://cdn.jsdelivr.net/gh/not2pixel/fluent.js@v1.0.0/dist/fluent.user.js
+//   // @require https://cdn.jsdelivr.net/gh/not2pixel/fluent.js@v1.1.0/dist/fluent.user.js
 // Exposes one global, `Fluent` — the library instance with the helper classes attached.
 import css from "./styles/fluent.css?inline";
 import * as API from "./main";

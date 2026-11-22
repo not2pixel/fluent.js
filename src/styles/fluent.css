@@ -22,13 +22,32 @@
 .fl-restore-pill {
   --fl-radius: 8px;
   --fl-el-radius: 5px;
-  font-family: var(--fl-font, "Gotham SSm", "Montserrat", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif);
+  --fl-font-stack: var(--fl-font, "Gotham SSm", "Montserrat", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif);
+  --fl-mono-stack: var(--fl-mono, "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-family: var(--fl-font-stack);
   font-size: 13px;
   line-height: 1.25;
   color: var(--fl-Text);
   -webkit-font-smoothing: antialiased;
   box-sizing: border-box;
 }
+/* Host pages often set font-family on div/span/button/input directly, which would beat
+   inheritance. Force the Fluent font on every Fluent node (important for userscripts). */
+.fl-window,
+.fl-window *,
+.fl-notifications,
+.fl-notifications *,
+.fl-restore-pill,
+.fl-restore-pill * {
+  font-family: var(--fl-font-stack) !important;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.fl-window .fl-code-pre,
+.fl-window .fl-code-pre * {
+  font-family: var(--fl-mono-stack) !important;
+}
+
 .fl-window *,
 .fl-window *::before,
 .fl-window *::after,
@@ -1197,7 +1216,6 @@
 .fl-code-pre {
   margin: 0;
   padding: 10px 12px;
-  font-family: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11.5px;
   line-height: 1.55;
   white-space: pre;

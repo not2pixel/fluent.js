@@ -34,6 +34,7 @@ Main.AddToggle("AutoFarm", {
 - [Dialog & notifications](#dialog--notifications)
 - [Themes](#themes)
 - [Save & interface managers](#save--interface-managers)
+- [Fonts](#fonts)
 - [Icons, rich text & keys](#icons-rich-text--keys)
 - [Coming from the Luau version](#coming-from-the-luau-version)
 - [Scripts](#scripts)
@@ -95,7 +96,7 @@ injected automatically, so one `@require` line is all you need:
 // ==UserScript==
 // @name         My Script
 // @match        https://example.com/*
-// @require      https://cdn.jsdelivr.net/gh/not2pixel/fluent.js@v1.0.0/dist/fluent.user.js
+// @require      https://cdn.jsdelivr.net/gh/not2pixel/fluent.js@v1.1.0/dist/fluent.user.js
 // @grant        none
 // @noframes
 // ==/UserScript==
@@ -109,9 +110,60 @@ Main.AddToggle("Enabled", { Title: "Enabled", Default: true, Callback: (on) => c
 
 A complete example is in [`examples/example.user.js`](examples/example.user.js).
 
-- **Pin a version.** Use `@v1.0.0` in the URL, not `@main`, so a future update can't break your script. The same file is also attached to
+### Custom font in a userscript
+
+Point `Fluent.SetFont` at the font files you host. `Local` names are tried first, so machines that already have the font (macOS for
+SF Pro) skip the download:
+
+```js
+const CDN = "https://your-cdn.example.com/fonts";
+Fluent.SetFont({
+  Family: "SF Pro",
+  Sources: [
+    { Url: `${CDN}/SF-Pro-Text-Regular.woff2`,  Weight: 400, Local: "SF Pro Text" },
+    { Url: `${CDN}/SF-Pro-Text-Medium.woff2`,   Weight: 500, Local: "SF Pro Text Medium" },
+    { Url: `${CDN}/SF-Pro-Text-Semibold.woff2`, Weight: 600, Local: "SF Pro Text Semibold" },
+  ],
+});
+```
+
+The UI uses weights **400** (text), **500** (element titles) and **600** (headings), so those three files are enough. If you have a
+variable font, use a single source with `Weight: "100 900"`. Your font server must send `Access-Control-Allow-Origin` (fonts are
+CORS requests).
+
+**Sites that block external fonts.** Some sites' Content-Security-Policy `font-src` refuses fonts from other domains. On those sites
+the URL above fails and the UI falls back to `system-ui`. To get around it, download the bytes with `GM_xmlhttpRequest` (it is not
+affected by the page's CSP) and pass them as `Data`:
+
+```js
+// @grant        GM_xmlhttpRequest
+// @connect      your-cdn.example.com
+
+const getBytes = (url) =>
+  new Promise((resolve, reject) =>
+    GM_xmlhttpRequest({ url, responseType: "arraybuffer", onload: (r) => resolve(r.response), onerror: reject })
+  );
+
+const CDN = "https://your-cdn.example.com/fonts";
+Fluent.SetFont({
+  Family: "SF Pro",
+  Sources: await Promise.all(
+    [[400, "Regular"], [500, "Medium"], [600, "Semibold"]].map(async ([Weight, name]) => ({
+      Weight,
+      Data: await getBytes(`${CDN}/SF-Pro-Text-${name}.woff2`),
+    }))
+  ),
+});
+```
+
+(Use top-level `await` inside an `async` function, or chain with `.then` if your manager doesn't support it.)
+
+> Note: Apple's license for SF Pro only allows it in apps and mockups for Apple platforms, not for embedding on the web.
+> Check that your use is allowed, or pick an open font such as Inter, which looks very similar.
+
+- **Pin a version.** Use `@v1.1.0` in the URL, not `@main`, so a future update can't break your script. The same file is also attached to
   each [GitHub release](https://github.com/not2pixel/fluent.js/releases), at
-  `https://github.com/not2pixel/fluent.js/releases/download/v1.0.0/fluent.user.js`.
+  `https://github.com/not2pixel/fluent.js/releases/download/v1.1.0/fluent.user.js`.
 - **Global.** The `Fluent` global is the library instance. `Fluent.Color3`, `Fluent.UDim2`, `Fluent.SaveManager`,
   `Fluent.InterfaceManager` and `Fluent.BuiltinThemes` are attached to it.
 - **Strict CSP.** Styles are added with a constructable stylesheet (`document.adoptedStyleSheets`), so they still load on sites whose
@@ -119,6 +171,8 @@ A complete example is in [`examples/example.user.js`](examples/example.user.js).
   `api.iconify.design`. Rich-text colors inside `<font>` can be dropped too.
 - **Run timing.** It works with the default `@run-at document-end`. With `document-start` it also works, because the window mounts on
   `<html>` until `<body>` exists.
+- **Fonts.** The UI always uses its own font. Site rules like `div { font-family: … !important }` don't reach it. To use your own
+  font, see [Custom font in a userscript](#custom-font-in-a-userscript).
 - **Storage.** `SaveManager` and `InterfaceManager` save to the current site's `localStorage`, so each site keeps its own settings.
 - **Stacking.** The UI sits above the page at `z-index: 2147483000`. Very aggressive site CSS can still affect it.
 
@@ -462,7 +516,7 @@ Every theme value is exposed as a CSS variable (`--fl-Accent`, `--fl-Text`, …)
 ```ts
 const iface = new InterfaceManager().SetLibrary(Fluent).SetFolder("MyApp");
 iface.BuildInterfaceSection(settingsTab); // theme, acrylic, transparency, animated, minimize key
-iface.ApplyCustomFont("'JetBrains Mono', monospace");
+iface.ApplyCustomFont("Inter");           // same as Fluent.SetFont (accepts a FontConfig too)
 
 const saves = new SaveManager().SetLibrary(Fluent).SetFolder("MyApp");
 saves.IgnoreThemeSettings();              // leave theme options out of configs
@@ -472,6 +526,25 @@ saves.LoadAutoloadConfig();
 ```
 
 Settings and configs are stored in `localStorage` under the folder name you choose.
+
+---
+
+## Fonts
+
+```ts
+Fluent.SetFont("Inter");                              // a font that is already available
+Fluent.SetFont("Inter, system-ui, sans-serif");       // a full CSS stack
+Fluent.SetFont({                                      // load files you host
+  Family: "My Font",
+  Sources: [{ Url: "/fonts/MyFont-Regular.woff2", Weight: 400 }, { Url: "/fonts/MyFont-SemiBold.woff2", Weight: 600 }],
+  Fallback: "system-ui, sans-serif",
+});
+Fluent.SetFont(null);                                 // back to the default
+```
+
+Each source takes `Url`, `Data` (an `ArrayBuffer`), `Local` (installed font names), `Weight` (`400` or `"100 900"`) and `Style`.
+The family is applied right away. The returned promise resolves to the list of sources that failed to load.
+Code blocks use a separate monospace stack, which you can change with the CSS variable `--fl-mono`.
 
 ---
 

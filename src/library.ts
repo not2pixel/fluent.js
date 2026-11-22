@@ -1,7 +1,7 @@
 import { h } from "./core/dom";
 import { ThemeManager } from "./themes/manager";
 import type { ThemeDefinition } from "./themes/types";
-import type { NotifyConfig, WindowConfig } from "./types";
+import type { FontConfig, FontSource, NotifyConfig, WindowConfig } from "./types";
 import { Window } from "./components/Window";
 import { NotificationHost, type NotificationHandle } from "./components/Notification";
 import type { ValueElement } from "./elements/base";
@@ -20,6 +20,8 @@ export class FluentLibrary {
   Transparency = true;
   Animated = true;
   Unloaded = false;
+  /** CSS font-family applied to the UI (null = default stack). */
+  Font: string | null = null;
 
   private themed = new Set<HTMLElement>();
   private errorHandler: ErrorHandler | null = null;
@@ -63,6 +65,8 @@ export class FluentLibrary {
     this.ThemeManager.applyTo(el, this.Theme, { transparency: this.Transparency });
     el.classList.toggle("fl-no-acrylic", !this.Acrylic);
     el.classList.toggle("fl-animated", this.Animated);
+    if (this.Font) el.style.setProperty("--fl-font", this.Font);
+    else el.style.removeProperty("--fl-font");
   }
 
   private repaint() {
@@ -100,6 +104,64 @@ export class FluentLibrary {
   ToggleAnimated(value: boolean) {
     this.Animated = value;
     this.repaint();
+  }
+
+  /**
+   * Uses a custom font for the whole UI.
+   *   Fluent.SetFont("Inter")                                    // already available font
+   *   Fluent.SetFont({ Family: "SF Pro", Sources: [{ Url: ".../SF-Pro-Text-Regular.woff2", Weight: 400 }, …] })
+   * The family is applied immediately (font-display: swap); the promise resolves once every file loaded.
+   * Resolves to the list of sources that failed (empty = all good).
+   */
+  async SetFont(font: string | FontConfig | null): Promise<FontSource[]> {
+    if (!font) {
+      this.Font = null;
+      this.repaint();
+      return [];
+    }
+    // A full CSS stack ("Inter, sans-serif") is applied as-is.
+    if (typeof font === "string" && font.includes(",")) {
+      this.Font = font;
+      this.repaint();
+      return [];
+    }
+    const cfg: FontConfig = typeof font === "string" ? { Family: font } : font;
+    const family = cfg.Family.replace(/["\\]/g, "");
+    this.Font = `"${family}", ${cfg.Fallback ?? 'system-ui, -apple-system, "Segoe UI", sans-serif'}`;
+    this.repaint();
+
+    const failed: FontSource[] = [];
+    if (!cfg.Sources?.length || typeof FontFace === "undefined") return failed;
+    await Promise.all(
+      cfg.Sources.map(async (src) => {
+        const descriptors: FontFaceDescriptors = { weight: String(src.Weight ?? "400"), style: src.Style ?? "normal", display: "swap" };
+        const locals = ([] as string[]).concat(src.Local ?? []).map((n) => `local("${n.replace(/["\\]/g, "")}")`);
+        const fmt = (u: string) => {
+          const ext = /\.(woff2|woff|ttf|otf)(\?|#|$)/i.exec(u)?.[1]?.toLowerCase();
+          return ext ? ` format("${ext === "ttf" ? "truetype" : ext === "otf" ? "opentype" : ext}")` : "";
+        };
+        try {
+          let face: FontFace;
+          if (src.Data) face = new FontFace(family, src.Data as BufferSource, descriptors);
+          else {
+            const list = [...locals, ...(src.Url ? [`url("${encodeURI(decodeURI(src.Url))}")${fmt(src.Url)}`] : [])];
+            if (!list.length) return;
+            face = new FontFace(family, list.join(", "), descriptors);
+          }
+          await face.load();
+          document.fonts.add(face);
+        } catch (e) {
+          failed.push(src);
+          console.warn(
+            `[Fluent] Could not load font "${family}" (${src.Url ?? "data"}, weight ${descriptors.weight}).` +
+              (src.Url ? " If the site's CSP blocks fonts, pass the file bytes as `Data` instead." : ""),
+            e
+          );
+        }
+      })
+    );
+    if (failed.length === cfg.Sources.length) console.warn(`[Fluent] No "${family}" file loaded; falling back to ${cfg.Fallback ?? "system-ui"}.`);
+    return failed;
   }
 
   SetErrorHandler(fn: ErrorHandler | null) {

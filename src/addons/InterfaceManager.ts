@@ -1,5 +1,6 @@
 import type { FluentLibrary } from "../library";
 import type { Container } from "../components/Container";
+import type { FontConfig } from "../types";
 
 interface InterfaceSettings {
   Theme: string;
@@ -49,12 +50,16 @@ export class InterfaceManager {
     }
   }
 
-  /** Applies a CSS font-family to every Fluent surface (web equivalent of ApplyCustomFont). */
-  ApplyCustomFont(fontFamily: string, weight?: number | string) {
-    this.Settings.Font = fontFamily;
-    document.documentElement.style.setProperty("--fl-font", fontFamily);
-    if (weight) document.documentElement.style.setProperty("--fl-font-weight", String(weight));
-    this.SaveSettings();
+  /**
+   * Applies a font to the UI (web equivalent of ApplyCustomFont). Accepts a family name or a
+   * full FontConfig (see Fluent.SetFont). Only a plain family name is remembered in settings.
+   */
+  ApplyCustomFont(font: string | FontConfig) {
+    if (typeof font === "string") {
+      this.Settings.Font = font;
+      this.SaveSettings();
+    }
+    return this.Library.SetFont(font);
   }
 
   BuildInterfaceSection(tab: Container) {

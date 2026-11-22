@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         fluent.js example
 // @namespace    https://github.com/not2pixel/fluent.js
-// @version      1.0.0
+// @version      1.1.0
 // @description  Minimal userscript using fluent.js
 // @match        *://*/*
-// @require      https://cdn.jsdelivr.net/gh/not2pixel/fluent.js@v1.0.0/dist/fluent.user.js
+// @require      https://cdn.jsdelivr.net/gh/not2pixel/fluent.js@v1.1.0/dist/fluent.user.js
 // @grant        none
 // @noframes
 // ==/UserScript==
@@ -13,6 +13,16 @@
   "use strict";
   // `Fluent` is the global created by the @require above.
   const { Color3, UDim2, SaveManager, InterfaceManager } = Fluent;
+
+  // Optional: use your own hosted font (see README → "Custom font in a userscript").
+  // Fluent.SetFont({
+  //   Family: "SF Pro",
+  //   Sources: [
+  //     { Url: "https://your-cdn.example.com/fonts/SF-Pro-Text-Regular.woff2", Weight: 400, Local: "SF Pro Text" },
+  //     { Url: "https://your-cdn.example.com/fonts/SF-Pro-Text-Medium.woff2", Weight: 500, Local: "SF Pro Text Medium" },
+  //     { Url: "https://your-cdn.example.com/fonts/SF-Pro-Text-Semibold.woff2", Weight: 600, Local: "SF Pro Text Semibold" },
+  //   ],
+  // });
 
   const Window = Fluent.CreateWindow({
     Title: "My Script",

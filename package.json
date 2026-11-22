@@ -1,6 +1,6 @@
 {
   "name": "fluent.js",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Fluent / FluentPro UI library ported to plain TypeScript + DOM, with a live playground",
   "type": "module",
   "license": "MIT",

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fluent.js Playground</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="pg-header">
+      <div class="pg-brand">
+        <span class="pg-logo">◆</span>
+        <strong>fluent.js</strong>
+        <span class="pg-muted">Playground</span>
+      </div>
+      <div class="pg-actions">
+        <button id="run" class="pg-btn pg-primary" title="Ctrl/Cmd + Enter">▶ Run</button>
+        <button id="reset" class="pg-btn" title="Restore the default demo script">Reset demo</button>
+        <button id="toggle-panel" class="pg-btn" title="Show / hide the side panel">⇤ Panel</button>
+      </div>
+    </header>
+    <div class="pg-main">
+      <aside class="pg-panel" id="panel">
+        <nav class="pg-tabs">
+          <button data-tab="code" class="pg-tab pg-active">Code</button>
+          <button data-tab="themes" class="pg-tab">Themes</button>
+          <button data-tab="log" class="pg-tab">Event log <span id="log-count" class="pg-badge">0</span></button>
+          <button data-tab="api" class="pg-tab">API</button>
+        </nav>
+        <section class="pg-pane pg-active" data-pane="code">
+          <div class="pg-editor-wrap">
+            <pre class="pg-gutter" id="gutter" aria-hidden="true"></pre>
+            <textarea id="editor" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+          </div>
+          <div class="pg-status" id="status">Ready.</div>
+        </section>
+        <section class="pg-pane" data-pane="themes">
+          <div class="pg-switches">
+            <label><input type="checkbox" id="opt-acrylic" checked /> Acrylic</label>
+            <label><input type="checkbox" id="opt-transparency" checked /> Transparency</label>
+            <label><input type="checkbox" id="opt-animated" checked /> Animated</label>
+          </div>
+          <div class="pg-section-title">Background</div>
+          <div class="pg-bg-list" id="bg-list"></div>
+          <div class="pg-section-title">Themes</div>
+          <div class="pg-theme-grid" id="theme-grid"></div>
+        </section>
+        <section class="pg-pane" data-pane="log">
+          <div class="pg-log-head">
+            <span class="pg-muted">Callbacks & <code>log()</code> output</span>
+            <button id="clear-log" class="pg-btn pg-small">Clear</button>
+          </div>
+          <ol class="pg-log" id="log"></ol>
+        </section>
+        <section class="pg-pane pg-api" data-pane="api" id="api"></section>
+      </aside>
+      <div class="pg-resizer" id="resizer"></div>
+      <main class="pg-stage" id="stage"></main>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

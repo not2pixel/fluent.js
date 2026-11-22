@@ -1,0 +1,50 @@
+{
+  "name": "fluent.js",
+  "version": "1.0.0",
+  "description": "Fluent / FluentPro UI library ported to plain TypeScript + DOM, with a live playground",
+  "type": "module",
+  "license": "MIT",
+  "author": "not2pixel",
+  "main": "./lib/fluent.umd.cjs",
+  "module": "./lib/fluent.js",
+  "types": "./lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "import": "./lib/fluent.js",
+      "require": "./lib/fluent.umd.cjs"
+    },
+    "./style.css": "./lib/fluent.css"
+  },
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --mode lib && tsc -p tsconfig.build.json",
+    "build:playground": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  },
+  "contributors": [
+    "dawid (original Fluent)",
+    "StyearX (FluentPro / Fluent-modded)",
+    "Vraigos (FluentPro / Fluent-modded)"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/not2pixel/fluent.js.git"
+  },
+  "keywords": [
+    "ui",
+    "fluent",
+    "component-library",
+    "typescript",
+    "vanilla-js"
+  ]
+}

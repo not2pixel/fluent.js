@@ -1,0 +1,1802 @@
+/* FluentPro web — port of the Fluent-modded Roblox UI.
+   Every color comes from --fl-* variables set by ThemeManager. */
+
+@property --fl-angle {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+
+.fluent-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+.fluent-root > * {
+  pointer-events: auto;
+}
+
+.fl-window,
+.fl-notifications,
+.fl-restore-pill {
+  --fl-radius: 8px;
+  --fl-el-radius: 5px;
+  font-family: var(--fl-font, "Gotham SSm", "Montserrat", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif);
+  font-size: 13px;
+  line-height: 1.25;
+  color: var(--fl-Text);
+  -webkit-font-smoothing: antialiased;
+  box-sizing: border-box;
+}
+.fl-window *,
+.fl-window *::before,
+.fl-window *::after,
+.fl-notifications *,
+.fl-notifications *::before,
+.fl-notifications *::after {
+  box-sizing: border-box;
+}
+.fl-window :where(button),
+.fl-notifications :where(button),
+:where(.fl-restore-pill) {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: inherit;
+}
+.fl-window input {
+  font: inherit;
+  color: inherit;
+}
+.fl-window [hidden] {
+  display: none !important;
+}
+
+/* ------------------------------------------------------------------ icons */
+.fl-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+.fl-icon svg {
+  display: block;
+}
+.fl-icon-mask {
+  background-color: currentColor;
+  mask-size: contain;
+  -webkit-mask-size: contain;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-position: center;
+}
+.fl-icon-img {
+  object-fit: contain;
+}
+
+/* ------------------------------------------------------------------ window */
+.fl-window {
+  position: absolute;
+  min-width: 420px;
+  min-height: 320px;
+  border-radius: var(--fl-radius);
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.25s ease, height 0.25s ease,
+    left 0.25s ease, top 0.25s ease;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.45));
+}
+.fl-window.fl-dragging,
+.fl-window.fl-resizing {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.fl-window.fl-opening {
+  opacity: 0;
+  transform: scale(0.96) translateY(8px);
+}
+.fl-window.fl-minimized {
+  opacity: 0;
+  transform: scale(0.94) translateY(12px);
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s 0.2s;
+}
+.fl-window-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  border: 1px solid var(--fl-AcrylicBorder);
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+.fl-acrylic {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--fl-WindowBg);
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+}
+.fl-no-acrylic .fl-acrylic,
+.fl-no-acrylic.fl-acrylic {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.fl-acrylic-gradient {
+  position: absolute;
+  inset: 0;
+  background: var(--fl-AcrylicGradientCss);
+  opacity: calc(var(--fl-AcrylicGradientOpacity) * 0.6);
+}
+.fl-acrylic-image {
+  position: absolute;
+  inset: 0;
+  background-image: var(--fl-BackgroundImage);
+  background-size: cover;
+  background-position: center;
+  opacity: var(--fl-BackgroundOpacity);
+}
+.fl-acrylic-noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* Animated shine border (themes with ShineEnabled + Animated on) */
+.fl-window-shine {
+  display: none;
+  position: absolute;
+  inset: -1px;
+  border-radius: calc(var(--fl-radius) + 1px);
+  padding: 1.5px;
+  background: var(--fl-ShineConic);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: fl-spin var(--fl-ShineDuration, 14s) linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+.fl-window.fl-animated[data-fl-shine="on"] .fl-window-shine {
+  display: block;
+}
+@keyframes fl-spin {
+  to {
+    --fl-angle: 360deg;
+  }
+}
+
+/* ------------------------------------------------------------------ title bar */
+.fl-titlebar {
+  height: 42px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 0 16px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.fl-dragging .fl-titlebar {
+  cursor: grabbing;
+}
+.fl-titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+.fl-titlebar-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.fl-titlebar-subtitle {
+  font-size: 12px;
+  color: var(--fl-Text);
+  opacity: 0.55;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fl-tags {
+  display: flex;
+  gap: 5px;
+  margin-left: 4px;
+}
+.fl-tag {
+  --fl-tag-color: var(--fl-Accent);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--fl-tag-color) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fl-tag-color) 75%, transparent);
+  color: var(--fl-Text);
+}
+.fl-tag-version {
+  --fl-tag-color: var(--fl-SubText);
+  opacity: 0.85;
+}
+.fl-titlebar-buttons {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+.fl-titlebar-btn {
+  width: 34px;
+  height: 28px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  color: var(--fl-Text) !important;
+  opacity: 0.85;
+  transition: background 0.15s, opacity 0.15s;
+}
+.fl-titlebar-btn:hover {
+  background: color-mix(in srgb, var(--fl-Text) 10%, transparent) !important;
+  opacity: 1;
+}
+.fl-titlebar-btn.fl-close:hover {
+  background: rgba(232, 17, 35, 0.85) !important;
+  color: #fff !important;
+}
+.fl-titlebar-line {
+  height: 1px;
+  flex: none;
+  background: var(--fl-TitleBarLine);
+  opacity: 0.6;
+}
+
+/* ------------------------------------------------------------------ body */
+.fl-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.fl-sidebar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0 12px 12px;
+  min-height: 0;
+}
+.fl-tab-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.fl-tab-scroll::-webkit-scrollbar {
+  display: none;
+}
+.fl-tab-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fl-tab-selector {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--fl-Accent);
+  opacity: 0;
+  z-index: 1;
+  transition: transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
+  box-shadow: 0 0 8px var(--fl-AccentSoft);
+}
+.fl-tab-button {
+  height: 34px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 12px;
+  font-size: 12.5px;
+  color: var(--fl-Text) !important;
+  transition: background 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.fl-tab-button .fl-icon {
+  opacity: 0.9;
+}
+.fl-tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fl-tab-button:hover {
+  background: color-mix(in srgb, var(--fl-Tab) 8%, transparent) !important;
+}
+.fl-tab-button.fl-selected {
+  background: color-mix(in srgb, var(--fl-Tab) 13%, transparent) !important;
+}
+
+.fl-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--fl-Input) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fl-InElementBorder) 35%, transparent);
+  color: var(--fl-SubText);
+}
+.fl-search:focus-within {
+  border-color: var(--fl-Accent);
+}
+.fl-search-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  outline: 0;
+  font-size: 12px;
+  color: var(--fl-Text);
+}
+.fl-search-input::placeholder {
+  color: var(--fl-SubText);
+  opacity: 0.7;
+}
+.fl-search-input::-webkit-search-cancel-button {
+  filter: grayscale(1);
+}
+
+.fl-user {
+  --fl-user-color: var(--fl-Accent);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--fl-user-color) 28%, transparent), color-mix(in srgb, var(--fl-user-color) 6%, transparent));
+  border: 1px solid color-mix(in srgb, var(--fl-user-color) 45%, transparent);
+}
+.fl-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex: none;
+  display: grid;
+  place-items: center;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--fl-user-color) 40%, transparent);
+}
+.fl-user-text {
+  min-width: 0;
+}
+.fl-user-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fl-user-sub {
+  font-size: 11px;
+  color: var(--fl-SubText);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------------ content */
+.fl-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 6px 12px 14px;
+}
+.fl-content-title {
+  font-size: 26px;
+  font-weight: 600;
+  padding: 2px 8px 10px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fl-title-anim {
+  animation: fl-title-in 0.3s ease;
+}
+@keyframes fl-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.fl-content-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--fl-Text) 25%, transparent) transparent;
+}
+.fl-content-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.fl-content-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--fl-Text) 25%, transparent);
+  border-radius: 3px;
+}
+.fl-tab-container {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  padding-bottom: 4px;
+}
+.fl-tab-container.fl-active {
+  display: flex;
+  animation: fl-tab-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes fl-tab-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+/* search: show every tab that has matches, with a heading */
+.fl-searching .fl-tab-container {
+  display: none;
+}
+.fl-searching .fl-tab-container.fl-search-match {
+  display: flex;
+  animation: none;
+}
+.fl-searching .fl-tab-container.fl-search-match::before {
+  content: attr(data-tab-title);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fl-SubText);
+  margin: 6px 0 0;
+}
+.fl-search-hidden {
+  display: none !important;
+}
+
+/* ------------------------------------------------------------------ sections */
+.fl-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 6px;
+}
+.fl-section:first-child {
+  margin-top: 0;
+}
+.fl-section-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 4px 0 3px;
+  color: var(--fl-Text);
+}
+.fl-section-header .fl-icon {
+  color: var(--fl-IconColor);
+}
+.fl-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fl-collapsible > .fl-section-header {
+  cursor: pointer;
+  border-radius: 5px;
+  padding: 6px 8px;
+  background: color-mix(in srgb, var(--fl-Element) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fl-InElementBorder) 20%, transparent);
+  font-size: 14px;
+  user-select: none;
+}
+.fl-collapsible > .fl-section-header:hover {
+  background: color-mix(in srgb, var(--fl-Element) 12%, transparent);
+}
+.fl-collapse-chevron {
+  margin-left: auto;
+  transition: transform 0.25s ease;
+}
+.fl-collapsed .fl-collapse-chevron {
+  transform: rotate(-90deg);
+}
+.fl-collapse-wrap {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.28s ease, opacity 0.2s;
+}
+.fl-collapse-wrap > .fl-section-body {
+  min-height: 0;
+  overflow: hidden;
+  padding-left: 8px;
+  border-left: 1px solid color-mix(in srgb, var(--fl-InElementBorder) 30%, transparent);
+  margin-left: 6px;
+}
+.fl-collapsed .fl-collapse-wrap {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.fl-group {
+  display: grid;
+}
+.fl-group-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------------ element row */
+.fl-element {
+  position: relative;
+  width: 100%;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--fl-el-radius);
+  background: var(--fl-ElementBg);
+  border: var(--fl-ElementBorderWidth) solid color-mix(in srgb, var(--fl-InElementBorder) 30%, transparent);
+  transition: background 0.15s, border-color 0.15s;
+  overflow: hidden;
+  text-align: left;
+}
+.fl-clickable:hover {
+  background: var(--fl-ElementBgHover);
+}
+.fl-clickable:active {
+  transform: scale(0.995);
+}
+.fl-el-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  flex: 1;
+}
+.fl-el-icon {
+  color: var(--fl-IconColor);
+}
+.fl-el-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.fl-el-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fl-Text);
+  overflow-wrap: anywhere;
+}
+.fl-el-desc {
+  font-size: 11px;
+  color: var(--fl-SubText);
+  overflow-wrap: anywhere;
+}
+.fl-el-right {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fl-SubText);
+}
+.fl-el-right:empty {
+  display: none;
+}
+
+.fl-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--fl-Text);
+  opacity: 0.12;
+  transform: scale(0);
+  animation: fl-ripple 0.6s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes fl-ripple {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* paragraph */
+.fl-paragraph .fl-el-desc {
+  font-size: 12px;
+  line-height: 1.4;
+}
+.fl-paragraph .fl-el-text {
+  gap: 4px;
+}
+
+/* divider / space */
+.fl-divider {
+  height: 1px;
+  margin: 4px 2px;
+  background: color-mix(in srgb, var(--fl-InElementBorder) 45%, transparent);
+  flex: none;
+}
+
+/* toggle */
+.fl-switch {
+  width: 36px;
+  height: 18px;
+  border-radius: 9px;
+  border: 1px solid var(--fl-ToggleSlider);
+  position: relative;
+  transition: background 0.2s, border-color 0.2s;
+  flex: none;
+}
+.fl-switch-knob {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--fl-ToggleSlider);
+  transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1), background 0.2s;
+}
+.fl-on .fl-switch {
+  background: var(--fl-Accent);
+  border-color: var(--fl-Accent);
+}
+.fl-on .fl-switch-knob {
+  transform: translateX(16px);
+  background: var(--fl-ToggleToggled);
+}
+
+/* checkbox */
+.fl-checkbox-box {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid var(--fl-CheckboxUnchecked);
+  display: grid;
+  place-items: center;
+  color: var(--fl-CheckboxCheck);
+  transition: background 0.18s, border-color 0.18s;
+}
+.fl-checkbox-box .fl-icon {
+  transform: scale(0);
+  transition: transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.fl-on .fl-checkbox-box {
+  background: var(--fl-CheckboxChecked);
+  border-color: var(--fl-CheckboxChecked);
+}
+.fl-on .fl-checkbox-box .fl-icon {
+  transform: scale(1);
+}
+
+/* slider */
+.fl-slider .fl-el-right {
+  width: 46%;
+  max-width: 230px;
+  min-width: 140px;
+  gap: 10px;
+}
+.fl-slider-value {
+  width: 52px;
+  flex: none;
+  text-align: right;
+  background: none;
+  border: 0;
+  outline: 0;
+  font-size: 12px;
+  color: var(--fl-SubText);
+  padding: 2px 0;
+  border-radius: 3px;
+}
+.fl-slider-value:focus {
+  color: var(--fl-Text);
+  background: color-mix(in srgb, var(--fl-Input) 25%, transparent);
+  text-align: center;
+}
+.fl-slider-hit {
+  flex: 1;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+.fl-slider-rail {
+  position: relative;
+  height: 4px;
+  width: 100%;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--fl-SliderRail) 40%, transparent);
+}
+.fl-slider-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--fl-Accent);
+}
+.fl-slider-knob {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fl-Accent);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fl-Accent) 25%, transparent);
+  transition: transform 0.15s;
+}
+.fl-slider-hit:hover .fl-slider-knob,
+.fl-dragging .fl-slider-knob {
+  transform: translate(-50%, -50%) scale(1.25);
+}
+
+/* input */
+.fl-textbox-wrap {
+  position: relative;
+  display: block;
+  width: 160px;
+  height: 30px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--fl-Input) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fl-InElementBorder) 25%, transparent);
+  transition: background 0.15s;
+}
+.fl-textbox-wrap:focus-within {
+  background: color-mix(in srgb, var(--fl-InputFocused) 80%, transparent);
+}
+.fl-textbox,
+.fl-dialog-input {
+  width: 100%;
+  height: 100%;
+  background: none;
+  border: 0;
+  outline: 0;
+  padding: 0 9px;
+  font-size: 12.5px;
+  color: var(--fl-Text);
+}
+.fl-textbox::placeholder,
+.fl-dialog-input::placeholder {
+  color: var(--fl-SubText);
+  opacity: 0.6;
+}
+.fl-textbox-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--fl-InputIndicator);
+  opacity: 0.6;
+  transition: height 0.15s, background 0.15s;
+}
+.fl-textbox-wrap:focus-within .fl-textbox-indicator {
+  height: 2px;
+  background: var(--fl-Accent);
+  opacity: 1;
+}
+
+/* dropdown */
+.fl-dropdown-display {
+  width: 160px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 8px 0 10px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--fl-DropdownFrame) 12%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--fl-InElementBorder) 30%, transparent) !important;
+  color: var(--fl-Text) !important;
+  font-size: 12.5px;
+  transition: background 0.15s;
+}
+.fl-dropdown-display:hover,
+.fl-open .fl-dropdown-display {
+  background: color-mix(in srgb, var(--fl-DropdownFrame) 20%, transparent) !important;
+}
+.fl-dropdown-display .fl-icon {
+  transition: transform 0.2s;
+  color: var(--fl-SubText);
+}
+.fl-open .fl-dropdown-display .fl-icon {
+  transform: rotate(180deg);
+}
+.fl-dropdown-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fl-empty .fl-dropdown-text {
+  color: var(--fl-SubText);
+}
+
+.fl-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.fl-overlay > * {
+  pointer-events: auto;
+}
+.fl-dropdown-panel {
+  --fl-dd-alpha: 0.97;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--fl-DropdownHolder) calc(var(--fl-dd-alpha) * 100%), transparent);
+  border: var(--fl-DropdownBorderWidth) solid var(--fl-DropdownBorder);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  transform-origin: top center;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  overflow: hidden;
+  z-index: 10;
+}
+.fl-dropdown-panel.fl-visible {
+  opacity: 1;
+  transform: none;
+}
+.fl-dropdown-bgimg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.35;
+  z-index: -1;
+}
+.fl-dropdown-animated {
+  border-color: transparent;
+}
+.fl-dropdown-animated::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: var(--fl-ShineConic);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: fl-spin 4s linear infinite;
+  pointer-events: none;
+}
+.fl-dropdown-outside {
+  top: 0;
+  bottom: 0;
+  width: 220px;
+  max-height: none !important;
+}
+.fl-dropdown-outside[data-side="right"] {
+  left: calc(100% + 10px);
+  transform-origin: left center;
+}
+.fl-dropdown-outside[data-side="left"] {
+  right: calc(100% + 10px);
+  transform-origin: right center;
+}
+.fl-dropdown-panel-title {
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 6px 4px;
+}
+.fl-dropdown-search {
+  height: 28px;
+  flex: none;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--fl-InElementBorder) 30%, transparent);
+  background: color-mix(in srgb, var(--fl-Input) 15%, transparent);
+  outline: 0;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--fl-Text);
+}
+.fl-dropdown-search:focus {
+  border-color: var(--fl-Accent);
+}
+.fl-dropdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--fl-Text) 25%, transparent) transparent;
+}
+.fl-dropdown-option {
+  position: relative;
+  flex: none;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 12px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  color: var(--fl-Text) !important;
+  transition: background 0.12s;
+}
+.fl-dropdown-option:hover {
+  background: color-mix(in srgb, var(--fl-DropdownOption) 10%, transparent) !important;
+}
+.fl-dropdown-option.fl-selected {
+  background: color-mix(in srgb, var(--fl-DropdownOption) 16%, transparent) !important;
+}
+.fl-dropdown-option-bar {
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 3px;
+  height: 0;
+  border-radius: 2px;
+  background: var(--fl-Accent);
+  transform: translateY(-50%);
+  transition: height 0.2s;
+}
+.fl-selected .fl-dropdown-option-bar {
+  height: 14px;
+}
+.fl-dropdown-option-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fl-dropdown-option-check {
+  opacity: 0;
+  color: var(--fl-Accent);
+}
+.fl-selected .fl-dropdown-option-check {
+  opacity: 1;
+}
+.fl-dropdown-empty {
+  padding: 8px;
+  font-size: 12px;
+  color: var(--fl-SubText);
+  text-align: center;
+}
+
+/* keybind */
+.fl-keybind-pill {
+  min-width: 34px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: center !important;
+  background: color-mix(in srgb, var(--fl-Keybind) 14%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--fl-InElementBorder) 30%, transparent) !important;
+  color: var(--fl-Text) !important;
+  transition: background 0.15s, border-color 0.15s;
+}
+.fl-keybind-pill:hover {
+  background: color-mix(in srgb, var(--fl-Keybind) 22%, transparent) !important;
+}
+.fl-keybind-pill.fl-picking {
+  border-color: var(--fl-Accent) !important;
+}
+.fl-keybind.fl-on .fl-keybind-pill {
+  border-color: var(--fl-Accent) !important;
+  box-shadow: inset 0 -2px 0 var(--fl-Accent);
+}
+.fl-keybind-pill.fl-flash {
+  animation: fl-flash 0.35s ease;
+}
+@keyframes fl-flash {
+  40% {
+    background: var(--fl-Accent);
+    color: var(--fl-ToggleToggled);
+  }
+}
+
+/* colorpicker */
+.fl-checker {
+  background-color: #fff;
+  background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+}
+.fl-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--fl-Text) 25%, transparent);
+}
+.fl-swatch-color {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.fl-cp {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  user-select: none;
+}
+.fl-cp-main {
+  display: flex;
+  gap: 12px;
+}
+.fl-cp-sv {
+  position: relative;
+  width: 180px;
+  height: 160px;
+  border-radius: 6px;
+  cursor: crosshair;
+  flex: none;
+  touch-action: none;
+}
+.fl-cp-sv-white,
+.fl-cp-sv-black {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.fl-cp-sv-white {
+  background: linear-gradient(90deg, #fff, transparent);
+}
+.fl-cp-sv-black {
+  background: linear-gradient(0deg, #000, transparent);
+}
+.fl-cp-cursor {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.fl-cp-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.fl-cp-compare {
+  display: flex;
+  height: 34px;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--fl-Text) 20%, transparent);
+}
+.fl-cp-compare > div {
+  flex: 1;
+}
+.fl-cp-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--fl-SubText);
+}
+.fl-cp-field span {
+  width: 30px;
+  flex: none;
+}
+.fl-cp-rgb {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.fl-cp-input {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--fl-InElementBorder) 30%, transparent);
+  background: color-mix(in srgb, var(--fl-DialogInput) 60%, transparent);
+  outline: 0;
+  padding: 0 7px;
+  font-size: 12px;
+  color: var(--fl-Text);
+}
+.fl-cp-input:focus {
+  border-color: var(--fl-Accent);
+}
+.fl-cp-bar {
+  position: relative;
+  height: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: none;
+}
+.fl-cp-hue {
+  background: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+}
+.fl-cp-alpha-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.fl-cp-bar-knob {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* code */
+.fl-code {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  gap: 0;
+}
+.fl-code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 8px 7px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--fl-InElementBorder) 25%, transparent);
+}
+.fl-code-title {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.fl-code-copy {
+  display: flex !important;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+  border-radius: 4px;
+  color: var(--fl-SubText) !important;
+  transition: background 0.15s, color 0.15s;
+}
+.fl-code-copy:hover {
+  background: color-mix(in srgb, var(--fl-Text) 8%, transparent) !important;
+  color: var(--fl-Text) !important;
+}
+.fl-code-copy.fl-copied {
+  color: var(--fl-SuccessNotifyColor) !important;
+}
+.fl-code-pre {
+  margin: 0;
+  padding: 10px 12px;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  line-height: 1.55;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--fl-Text);
+  background: color-mix(in srgb, #000 22%, transparent);
+  scrollbar-width: thin;
+}
+.fl-tok-kw {
+  color: #c792ea;
+}
+.fl-tok-string {
+  color: #c3e88d;
+}
+.fl-tok-comment {
+  color: #697098;
+  font-style: italic;
+}
+.fl-tok-num {
+  color: #f78c6c;
+}
+.fl-tok-fn {
+  color: #82aaff;
+}
+
+/* media */
+.fl-media {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  flex: none;
+  background: color-mix(in srgb, var(--fl-Element) 10%, #000 30%);
+  border: 1px solid color-mix(in srgb, var(--fl-InElementBorder) 30%, transparent);
+}
+.fl-media-img,
+.fl-media-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.fl-media-missing::after {
+  content: "Media unavailable";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: var(--fl-SubText);
+}
+.fl-viewport > * {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+.fl-video-controls {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+.fl-controls-visible .fl-video-controls {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.fl-media-btn {
+  width: 24px;
+  height: 24px;
+  display: grid !important;
+  place-items: center;
+  border-radius: 4px;
+  color: #fff !important;
+}
+.fl-media-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+.fl-seek {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, currentColor 25%, transparent);
+  cursor: pointer;
+  touch-action: none;
+}
+.fl-seek::before {
+  content: "";
+  position: absolute;
+  inset: -6px 0;
+}
+.fl-seek-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--fl-Accent);
+}
+.fl-media-time {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+.fl-audio {
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 10px;
+}
+.fl-audio-cover {
+  width: 64px;
+  height: 64px;
+  flex: none;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--fl-Accent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--fl-Accent) 35%, transparent), color-mix(in srgb, var(--fl-Accent) 8%, transparent));
+}
+.fl-audio-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.fl-playing .fl-audio-cover {
+  animation: fl-pulse 2s ease-in-out infinite;
+}
+@keyframes fl-pulse {
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--fl-Accent) 25%, transparent);
+  }
+}
+.fl-audio-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+}
+.fl-audio-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fl-audio-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fl-audio-play {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  display: grid !important;
+  place-items: center;
+  background: var(--fl-Accent) !important;
+  color: var(--fl-ToggleToggled) !important;
+  transition: transform 0.15s;
+}
+.fl-audio-play:hover {
+  transform: scale(1.08);
+}
+.fl-audio-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fl-SubText);
+}
+.fl-audio-volrow .fl-seek {
+  flex: none;
+  width: 80px;
+}
+
+/* progress bar */
+.fl-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 2px;
+}
+.fl-progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.fl-progress-pct {
+  font-size: 12px;
+  color: var(--fl-SubText);
+  font-variant-numeric: tabular-nums;
+}
+.fl-progress-rail {
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--fl-ProgressBarRail) 35%, transparent);
+}
+.fl-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--fl-ProgressBarFill) 70%, #000), var(--fl-ProgressBarFill));
+  transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+.fl-progress-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transform: translateX(-100%);
+  animation: fl-shimmer 1.8s ease-in-out infinite;
+}
+@keyframes fl-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* discord */
+.fl-discord {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  gap: 0;
+}
+.fl-discord-banner {
+  height: 56px;
+  background: linear-gradient(135deg, #5865f2, #3c45a5);
+  background-size: cover;
+  background-position: center;
+}
+.fl-discord-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+.fl-discord-icon {
+  width: 42px;
+  height: 42px;
+  margin-top: -26px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: #5865f2;
+  color: #fff;
+  border: 3px solid var(--fl-DropdownHolder);
+}
+.fl-discord-icon img {
+  width: 100%;
+  height: 100%;
+}
+.fl-discord-info {
+  flex: 1;
+  min-width: 0;
+}
+.fl-discord-stats {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--fl-SubText);
+  margin-top: 3px;
+}
+.fl-discord-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #80848e;
+}
+.fl-discord-dot.fl-online {
+  background: #23a55a;
+}
+.fl-discord-join {
+  padding: 7px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  background: var(--fl-DiscordJoinButton);
+  transition: filter 0.15s;
+}
+.fl-discord-join:hover {
+  filter: brightness(1.12);
+}
+
+/* social */
+.fl-social {
+  justify-content: flex-start;
+}
+.fl-social-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex: none;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--fl-Accent) 30%, transparent);
+}
+.fl-social-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.fl-social-copy:hover {
+  text-decoration: underline;
+}
+.fl-social-platform {
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 10px;
+  color: var(--fl-Text);
+  text-decoration: none;
+  background: color-mix(in srgb, var(--fl-Accent) 25%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fl-Accent) 50%, transparent);
+}
+
+/* ------------------------------------------------------------------ dialog */
+.fl-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--fl-radius);
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  z-index: 20;
+}
+.fl-dialog-backdrop.fl-visible {
+  opacity: 1;
+}
+.fl-dialog {
+  width: min(380px, calc(100% - 40px));
+  max-height: calc(100% - 40px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--fl-Dialog);
+  border: 1px solid var(--fl-DialogBorder);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  transform: scale(1.06);
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.fl-visible .fl-dialog {
+  transform: none;
+}
+.fl-dialog-main {
+  padding: 18px 18px 16px;
+  overflow-y: auto;
+}
+.fl-dialog-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+.fl-dialog-content {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--fl-Text);
+  opacity: 0.9;
+}
+.fl-dialog-input-wrap {
+  width: 100%;
+  height: 34px;
+  margin-top: 12px;
+  background: var(--fl-DialogInput);
+}
+.fl-dialog-input-wrap .fl-textbox-indicator {
+  background: var(--fl-DialogInputLine);
+}
+.fl-dialog-buttons {
+  display: grid;
+  gap: 8px;
+  padding: 14px 18px;
+  background: var(--fl-DialogHolder);
+  border-top: 1px solid var(--fl-DialogHolderLine);
+}
+.fl-dialog-button {
+  height: 32px;
+  border-radius: 5px;
+  text-align: center !important;
+  font-size: 13px;
+  background: var(--fl-DialogButton) !important;
+  border: 1px solid var(--fl-DialogButtonBorder) !important;
+  transition: filter 0.15s, transform 0.1s;
+}
+.fl-dialog-button:first-child {
+  background: var(--fl-ButtonGradientBg) !important;
+}
+.fl-dialog-button:hover {
+  filter: brightness(1.15);
+}
+.fl-dialog-button:active {
+  transform: scale(0.98);
+}
+
+/* ------------------------------------------------------------------ minimize pill */
+.fl-restore-pill {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px !important;
+  border-radius: 999px;
+  font-size: 12.5px !important;
+  color: var(--fl-Text) !important;
+  background: var(--fl-WindowBg) !important;
+  border: 1px solid var(--fl-AcrylicBorder) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 20px);
+  transition: opacity 0.22s, transform 0.22s;
+  z-index: 3;
+}
+.fl-restore-pill.fl-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+/* ------------------------------------------------------------------ resize */
+.fl-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  color: var(--fl-SubText);
+  opacity: 0.6;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+.fl-maximized .fl-resize {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ notifications */
+.fl-notifications {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  pointer-events: none;
+}
+.fl-notify {
+  --fl-notify-color: var(--fl-InfoNotifyColor);
+  position: relative;
+  display: flex;
+  gap: 10px;
+  padding: 12px 12px 14px 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  pointer-events: auto;
+  background: var(--fl-WindowBg);
+  border: 1px solid var(--fl-AcrylicBorder);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  transform: translateX(calc(100% + 30px));
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.25, 1.05), opacity 0.25s;
+}
+.fl-notify.fl-visible {
+  transform: none;
+}
+.fl-notify.fl-leaving {
+  opacity: 0;
+  transform: translateX(40px);
+}
+.fl-notify-success {
+  --fl-notify-color: var(--fl-SuccessNotifyColor);
+}
+.fl-notify-warning {
+  --fl-notify-color: var(--fl-WarningNotifyColor);
+}
+.fl-notify-error {
+  --fl-notify-color: var(--fl-ErrorNotifyColor);
+}
+.fl-notify-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--fl-notify-color);
+}
+.fl-notify-icon {
+  color: var(--fl-notify-color);
+  padding-top: 1px;
+}
+.fl-notify-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fl-notify-title {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.fl-notify-content {
+  font-size: 12.5px;
+  color: var(--fl-Text);
+  opacity: 0.9;
+}
+.fl-notify-sub {
+  font-size: 11.5px;
+  color: var(--fl-SubText);
+}
+.fl-notify-close {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 4px;
+  display: grid !important;
+  place-items: center;
+  color: var(--fl-SubText) !important;
+}
+.fl-notify-close:hover {
+  background: color-mix(in srgb, var(--fl-Text) 10%, transparent) !important;
+  color: var(--fl-Text) !important;
+}
+.fl-notify-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: var(--fl-notify-color);
+  transform-origin: left;
+  animation: fl-notify-progress linear forwards;
+}
+@keyframes fl-notify-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* ------------------------------------------------------------------ narrow screens */
+@media (max-width: 640px) {
+  .fl-window:not(.fl-maximized) {
+    max-width: calc(100vw - 16px);
+  }
+  .fl-titlebar-subtitle,
+  .fl-tags {
+    display: none;
+  }
+  .fl-textbox-wrap,
+  .fl-dropdown-display {
+    width: 120px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fl-window *,
+  .fl-window,
+  .fl-notify {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "strict": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "types": [
+      "vite/client"
+    ],
+    "paths": {
+      "fluent.js": [
+        "./src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "playground"
+  ]
+}

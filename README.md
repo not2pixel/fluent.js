@@ -24,6 +24,7 @@ Main.AddToggle("AutoFarm", {
 
 - [Credits](#credits)
 - [Installation](#installation)
+- [Userscripts](#userscripts)
 - [Playground](#playground)
 - [Quick start](#quick-start)
 - [Window](#window)
@@ -82,6 +83,44 @@ Build once (`npm run build`), then copy `lib/fluent.umd.cjs` and `lib/fluent.css
   Fluent.CreateWindow({ Title: "No bundler" });
 </script>
 ```
+
+---
+
+## Userscripts
+
+`dist/fluent.user.js` is a single-file build for Tampermonkey, Violentmonkey and Greasemonkey. The CSS is bundled inside it and
+injected automatically, so one `@require` line is all you need:
+
+```js
+// ==UserScript==
+// @name         My Script
+// @match        https://example.com/*
+// @require      https://cdn.jsdelivr.net/gh/not2pixel/fluent.js@v1.0.0/dist/fluent.user.js
+// @grant        none
+// @noframes
+// ==/UserScript==
+
+const { Color3, UDim2, SaveManager, InterfaceManager } = Fluent; // `Fluent` is a global
+
+const Window = Fluent.CreateWindow({ Title: "My Script", Theme: "Deep Violet", MinimizeKey: "RightControl" });
+const Main = Window.AddTab({ Title: "Main", Icon: "lucide/home" });
+Main.AddToggle("Enabled", { Title: "Enabled", Default: true, Callback: (on) => console.log(on) });
+```
+
+A complete example is in [`examples/example.user.js`](examples/example.user.js).
+
+- **Pin a version.** Use `@v1.0.0` in the URL, not `@main`, so a future update can't break your script. The same file is also attached to
+  each [GitHub release](https://github.com/not2pixel/fluent.js/releases), at
+  `https://github.com/not2pixel/fluent.js/releases/download/v1.0.0/fluent.user.js`.
+- **Global.** The `Fluent` global is the library instance. `Fluent.Color3`, `Fluent.UDim2`, `Fluent.SaveManager`,
+  `Fluent.InterfaceManager` and `Fluent.BuiltinThemes` are attached to it.
+- **Strict CSP.** Styles are added with a constructable stylesheet (`document.adoptedStyleSheets`), so they still load on sites whose
+  Content-Security-Policy blocks inline `<style>`. On those sites, Iconify icons can still fail to load if the site's `img-src` blocks
+  `api.iconify.design`. Rich-text colors inside `<font>` can be dropped too.
+- **Run timing.** It works with the default `@run-at document-end`. With `document-start` it also works, because the window mounts on
+  `<html>` until `<body>` exists.
+- **Storage.** `SaveManager` and `InterfaceManager` save to the current site's `localStorage`, so each site keeps its own settings.
+- **Stacking.** The UI sits above the page at `z-index: 2147483000`. Very aggressive site CSS can still affect it.
 
 ---
 
@@ -475,7 +514,8 @@ These Roblox-only addons have no web version: FloatingButtonManager, MediaManage
 | Command | Description |
 |---|---|
 | `npm run dev` | Start the playground at http://localhost:5173 |
-| `npm run build` | Build the library into `lib/` (ESM, UMD, `.d.ts`, `fluent.css`) |
+| `npm run build` | Build the library into `lib/` (ESM, UMD, `.d.ts`, `fluent.css`) and the userscript file `dist/fluent.user.js` |
+| `npm run build:userscript` | Build only `dist/fluent.user.js` (commit it, because jsDelivr serves it from the repo) |
 | `npm run build:playground` | Build the playground as a static site into `playground-dist/` |
 | `npm run typecheck` | Type-check the library and the playground |
 
@@ -483,13 +523,17 @@ Project layout:
 
 ```
 src/
-  index.ts            public exports + the shared Fluent instance
+  index.ts            bundler entry (exports + CSS import)
+  main.ts             public exports + the shared Fluent instance
   library.ts          FluentLibrary (CreateWindow, Notify, themes, Options…)
   components/         Window, Tab, Section/Group containers, Dialog, Notification
   elements/           Toggle, Slider, Input, Dropdown, Colorpicker, Keybind, media, social…
   addons/             SaveManager, InterfaceManager
   themes/             built-in themes + CSS-variable theme manager
   styles/fluent.css   all styles
+  userscript.ts       entry for dist/fluent.user.js (global `Fluent`, CSS injected)
+dist/fluent.user.js   prebuilt single-file build for userscript @require
+examples/             example userscript
 playground/           the live playground (Vite)
 ```
 

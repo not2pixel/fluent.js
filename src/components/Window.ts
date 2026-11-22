@@ -142,14 +142,21 @@ export class Window {
     Library.track(this.Root);
     Library.track(this.restorePill);
 
-    // Position: centered in host unless specified.
-    const hostRect = this.host.getBoundingClientRect();
-    const hostW = this.host === Library.root ? window.innerWidth : hostRect.width;
-    const hostH = this.host === Library.root ? window.innerHeight : hostRect.height;
-    const pos = Config.Position ? readSize(Config.Position, [0, 0]) : [Math.max(8, (hostW - this.Size[0]) / 2), Math.max(8, (hostH - this.Size[1]) / 2)];
-    this.Root.style.left = `${pos[0]}px`;
-    this.Root.style.top = `${pos[1]}px`;
-    requestAnimationFrame(() => requestAnimationFrame(() => this.Root.classList.remove("fl-opening")));
+    // Position: centered in host unless specified. Re-centered on the next frame because
+    // userscripts can run before the viewport has its final size.
+    const place = () => {
+      const [hostW, hostH] = this.hostSize();
+      const pos = Config.Position
+        ? readSize(Config.Position, [0, 0])
+        : [Math.max(8, (hostW - this.Size[0]) / 2), Math.max(8, (hostH - this.Size[1]) / 2)];
+      this.Root.style.left = `${pos[0]}px`;
+      this.Root.style.top = `${pos[1]}px`;
+    };
+    place();
+    requestAnimationFrame(() => {
+      place();
+      requestAnimationFrame(() => this.Root.classList.remove("fl-opening"));
+    });
 
     this.setupDrag(titleBar);
     this.setupResize(resize);

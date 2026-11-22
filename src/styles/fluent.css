@@ -11,7 +11,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 2147483000; /* stay above host-page overlays (userscripts) */
 }
 .fluent-root > * {
   pointer-events: auto;

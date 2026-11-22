@@ -1,0 +1,24 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Create GitHub release with the userscript build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp lib/fluent.css lib/fluent.js lib/fluent.umd.cjs dist/
+          gh release create "$GITHUB_REF_NAME" dist/fluent.user.js dist/fluent.js dist/fluent.umd.cjs dist/fluent.css \
+            --title "$GITHUB_REF_NAME" --generate-notes

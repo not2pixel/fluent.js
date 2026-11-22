@@ -35,7 +35,7 @@ export class FluentLibrary {
   get root(): HTMLElement {
     if (!this._root) {
       this._root = h("div", { class: "fluent-root" });
-      document.body.append(this._root);
+      (document.body ?? document.documentElement).append(this._root);
       this.track(this._root);
     }
     return this._root;

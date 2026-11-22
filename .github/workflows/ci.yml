@@ -15,3 +15,5 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm run build:playground
+      - name: dist/fluent.user.js is up to date
+        run: git diff --exit-code -- dist/ || (echo "Run 'npm run build:userscript' and commit dist/" && exit 1)
